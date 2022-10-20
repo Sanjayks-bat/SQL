@@ -1,7 +1,7 @@
 USE EShop
  --COMMENT
- --Get all products
- Select * from Orders
+ --Get all orders
+Select * from Orders
 
 --Get all productst that habve category id = 10
 Select * from Product where CategoryId=10
@@ -49,7 +49,7 @@ AND Customer.Name = 'Eena'
 
 
 --1.Get all customer details
-Select Name from Customer 
+Select * from Customer 
 
 
 --2. Get all customer orders,customerid , orderid
@@ -66,7 +66,227 @@ Select Name,Cost,[OrderId], Status,OrderDate from Orders,Product where Orders.Pr
 Select Name,Cost,[OrderId], Status,OrderDate from Orders,Product where Orders.OrderDate between '2022-10-01' AND '2022-10-30'
 
 --6. Get Customer Name, Product Name Purchased, Product Cost for all customers
---Select Customer.Name,Product.Name, Sum(Cost) from Customer,Product,Orders where Customer.Id = Orders.OrderId AND Product.Id = Orders.ProductId 
+Select Customer.Name,Product.Name, Cost from Customer,Product,Orders where Orders.CustomerId = Customer.Id AND  Orders.ProductId=Product.Id 
 
 --7. Get All Customers that contain third letter as 'e' and last letter as 'a'
 Select * from Customer where Name Like '__e%a'
+
+
+--Get top two most expensive orders
+Select top 2 * from Orders, Product where Orders.ProductId = Product.Id Order By Product.Cost desc 
+
+--get all order details count grouped by status
+Select count(*),status from orders group by [Status] 
+
+
+--groiup all products by category
+Select count(*),CategoryId from Product group by CategoryId
+
+Create View vw_GetProductsCount as  
+(Select count(*) as TotalProducts,ProductCategory.Name from Product, ProductCategory 
+where Product.CategoryId=ProductCategory.Id 
+group by ProductCategory.Name 
+Having ProductCategory.Name Like '%i%' 
+AND Count(*) < 4)
+--Order By count(*), ProductCategory.Name desc
+
+Select * from vw_GetProductsCount where Name = 'Lights' 
+
+--Create a stored procedure
+Create Procedure sp_GetProductsCount
+as
+BEGIN
+	Select count(*) as TotalProducts,ProductCategory.Name from Product, ProductCategory 
+	where Product.CategoryId=ProductCategory.Id 
+	group by ProductCategory.Name 
+	Having ProductCategory.Name Like '%i%' 
+	AND Count(*) < 4
+	Order By count(*), ProductCategory.Name desc
+END
+
+
+--Create function
+Create Function fn_GetMaxProductCost() 
+Returns BigInt
+AS
+BEGIN
+DECLARE @result BigInt
+Select @result=Max(Cost) from Product
+return @result
+END
+
+Create Function fn_GetMinProductCost() 
+Returns BigInt
+AS
+BEGIN
+DECLARE @result BigInt
+Select @result=Min(Cost) from Product
+return @result
+END
+
+--To execute stored procedure
+Select [dbo].[fn_GetMaxProductCost]() as [Most_Expensive],
+	[dbo].[fn_GetMinProductCost]() as [Least_Expensive]
+
+Select [dbo].[fn_GetMaxProductCost]() as [Most_Expensive],
+	[Name]
+	From Product
+	Where Cost = [dbo].[fn_GetMaxProductCost]()
+
+CREATE FUNCTION fn_SampleTable()
+Returns Table
+AS
+REturn
+(
+Select Product.Name as ProductName, ProductCategory.Name as ProductCategory
+from 
+Product,ProductCategory
+WHERE
+Product.CategoryId = ProductCategory.Id
+)
+
+Select * from [dbo].[fn_SampleTable]() as [Sample]
+
+--Working with Joins with predefined keywords
+--iNNER JOIN: oNLY COMMON RECORDS
+Select * from Customer Inner Join Orders ON orders.CustomerId=Customer.Id
+Where Customer.Name Like '%a%'
+
+--LEFT OUTER JOIN: ALL RECORDS OF LEFT AND ONLY MATCHING RECORDS OF RIGHT
+Select * from Customer LEFT OUTER JOIN Orders
+ON Customer.Id = Orders.CustomerId
+
+--Right outer join : all records of right and only matching records of right
+Select * from Customer RIGHT OUTER JOIN Orders
+ON Customer.Id = Orders.CustomerId
+
+--Full outer join: All records of left + matching records of right && All records of right + matching records of left
+Select * from Product FULL OUTER JOIN Customer ON Product.Id = Customer.Id
+
+
+--Cross jOIN: Ranom permutation combination( Product of records of both tables)
+Select * from Product Cross join Customer
+
+
+--inserting manuallly to product table
+USE [EShop]
+GO
+
+INSERT INTO [dbo].[Product]
+           ([Name]
+           ,[Cost]
+           ,[CategoryId])
+     VALUES
+           ('Dummy',12222,11)
+
+INSERT INTO [dbo].[Product]
+           ([Name]
+           ,[Cost]
+           ,[CategoryId])
+     VALUES
+           ('summy',122,11)
+
+INSERT INTO [dbo].[Product]
+           ([Name]
+           ,[Cost]
+           ,[CategoryId])
+     VALUES
+           ('bunny',5222,11)
+GO
+
+sELECT * FROM AUDIT
+
+--Add custimer then automatically add a dummy order
+Create Procedure sp_InsertNewCustomer(@Name NVARCHAR(50),@Email NVARCHAR(50))
+AS
+begin
+BEGIN TRANSACTION T1
+INSERT INTO [dbo].[Customer]
+           ([Name]
+           ,[Email])
+     VALUES
+           (@Name,@Email)
+IF @@ERROR <> 0
+	ROLLBACK Transaction T1
+DEclare @Cid INT
+set @Cid= @@IDENTITY
+
+INSERT INTO [dbo].[Orders]
+           ([Status]
+           ,[OrderDate]
+           ,[ProductId]
+           ,[CustomerId])
+     VALUES
+           ('IN-PRogress', GETDATE(),1009,@Cid)
+IF @@ERROR <> 0
+	ROLLBACK Transaction T1
+COMMIT TRANSACTION T1
+END
+
+
+
+Exec sp_InsertNewCustomer 'Maya','maya@gmail.com'
+
+Select top 1 * from Customer order by id desc
+
+
+
+
+--iNNER JOIN
+Select * from Product Inner Join Orders ON Product.Id=Orders.ProductId
+Where Product.Name Like '%a%'
+
+--LEFT OUTER JOIN
+Select * from Product LEFT OUTER JOIN Orders
+ON Product.Id = Orders.ProductId
+
+--Right outer join 
+Select * from Product RIGHT OUTER JOIN Orders
+ON Product.Id = Orders.ProductId
+
+--cROSS JOIN
+Select * from Product Cross join Orders
+
+
+
+DELETE Product WHERE [NAME] = 'summy'
+
+Select * from Product where Product.[Name] = 'Jhoomer' 
+
+Update Product 
+Set Product.Name = 'Jhoomer',
+Product.Cost = 15000
+where Product.Name = 'Dummy'
+
+
+Select * from Product
+
+UPDATE [dbo].[Product]
+   SET [Name] = 'Trousers'
+      ,[Cost] = 500
+      ,[CategoryId] = 10
+ WHERE Product.Name = 'Lehenga'
+
+delete Orders where ProductId in (select Id from Product where CategoryId = 11)
+
+
+DELETE PRODUCT WHERE CategoryId  = 11
+
+sELECT * FROM Product
+
+DELETE ProductCategory WHERE Name = 'Lights'
+
+
+--cursor: similar to traversing each row in a loop and manipulating row by row  and column by column to be only shown to the user
+/* foreach(single in collection){
+..logic.
+}
+*/
+/*
+For a cursor
+1. DECLARE a cursor
+2. Open the cursor
+3. Fetch new row from desired table or output of query
+4. Write a loop to work row by row
+5. Close cursor
+*/
