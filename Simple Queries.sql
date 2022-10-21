@@ -277,16 +277,4 @@ sELECT * FROM Product
 DELETE ProductCategory WHERE Name = 'Lights'
 
 
---cursor: similar to traversing each row in a loop and manipulating row by row  and column by column to be only shown to the user
-/* foreach(single in collection){
-..logic.
-}
-*/
-/*
-For a cursor
-1. DECLARE a cursor
-2. Open the cursor
-3. Fetch new row from desired table or output of query
-4. Write a loop to work row by row
-5. Close cursor
-*/
+
